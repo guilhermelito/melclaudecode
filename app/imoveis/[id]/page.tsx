@@ -4,15 +4,18 @@ import { requireUser } from "@/lib/supabase/dal";
 import { createClient } from "@/lib/supabase/server";
 import { StatusBadge, ObligationStatusBadge } from "@/components/status-badge";
 import { DeleteButton } from "@/components/delete-button";
+import { DocumentUploadForm } from "@/components/document-upload-form";
 import { countryLabels, formatCurrency, formatDate } from "@/lib/format";
 import { deleteOwnership } from "./titularidade/actions";
 import { deleteContract } from "./contratos/actions";
 import { deleteInsurance } from "./seguros/actions";
 import { deleteObligation } from "./obrigacoes/actions";
+import { uploadDocument, deleteDocument } from "./documentos/actions";
 import type {
   InsurancePolicy,
   LeaseContract,
   Property,
+  PropertyDocument,
   PropertyOwnership,
   RecurringObligation,
 } from "@/lib/types";
@@ -43,6 +46,7 @@ export default async function ImovelDetalhePage({
     { data: contracts },
     { data: policies },
     { data: obligations },
+    { data: documents },
   ] = await Promise.all([
     supabase.from("properties").select("*").eq("id", id).maybeSingle<Property>(),
     supabase
@@ -69,11 +73,26 @@ export default async function ImovelDetalhePage({
       .eq("property_id", id)
       .order("next_due_date", { nullsFirst: false })
       .returns<RecurringObligation[]>(),
+    supabase
+      .from("documents")
+      .select("*")
+      .eq("property_id", id)
+      .order("uploaded_at", { ascending: false })
+      .returns<PropertyDocument[]>(),
   ]);
 
   if (!property) {
     notFound();
   }
+
+  const documentsWithUrls = await Promise.all(
+    (documents ?? []).map(async (doc) => {
+      const { data: signed } = await supabase.storage
+        .from("documentos")
+        .createSignedUrl(doc.file_path, 60 * 10);
+      return { ...doc, url: signed?.signedUrl ?? null };
+    })
+  );
 
   const percentageTotal = (ownerships ?? []).reduce((sum, o) => sum + o.percentage, 0);
   const percentageOff = ownerships && ownerships.length > 0 && Math.abs(percentageTotal - 100) > 0.01;
@@ -293,9 +312,50 @@ export default async function ImovelDetalhePage({
         </section>
       </div>
 
-      <p className="mt-6 text-sm text-slate-400">
-        Documentos entram aqui numa próxima etapa.
-      </p>
+      <section className="mt-6 max-w-4xl rounded-xl border border-slate-200 bg-white p-6">
+        <h2 className="mb-3 text-sm font-semibold text-slate-900">Documentos</h2>
+
+        {documentsWithUrls.length === 0 && (
+          <p className="text-sm text-slate-400">Nenhum documento anexado.</p>
+        )}
+
+        <ul className="space-y-2">
+          {documentsWithUrls.map((doc) => (
+            <li
+              key={doc.id}
+              className="flex items-center justify-between rounded-md border border-slate-100 px-3 py-2 text-sm"
+            >
+              <div>
+                {doc.url ? (
+                  <a
+                    href={doc.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-slate-900 hover:underline"
+                  >
+                    {doc.document_type}
+                  </a>
+                ) : (
+                  <p className="font-medium text-slate-900">{doc.document_type}</p>
+                )}
+                <p className="text-slate-500">
+                  {doc.reference_date ? formatDate(doc.reference_date) : formatDate(doc.uploaded_at.slice(0, 10))}
+                </p>
+              </div>
+              <DeleteButton
+                action={deleteDocument.bind(null, doc.id, id, doc.file_path)}
+                confirmMessage="Remover este documento?"
+              />
+            </li>
+          ))}
+        </ul>
+
+        <DocumentUploadForm
+          contracts={contracts ?? []}
+          policies={policies ?? []}
+          action={uploadDocument.bind(null, id)}
+        />
+      </section>
     </div>
   );
 }

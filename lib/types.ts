@@ -72,3 +72,22 @@ export type RecurringObligation = {
   current_status: ObligationStatus;
   notes: string | null;
 };
+
+export type DocumentType =
+  | "Contrato"
+  | "Apólice de Seguro"
+  | "Espelho IPTU/IMI"
+  | "Nada Consta"
+  | "Outro";
+
+export type PropertyDocument = {
+  id: string;
+  property_id: string;
+  related_contract_id: string | null;
+  related_insurance_id: string | null;
+  document_type: DocumentType;
+  file_path: string;
+  reference_date: string | null;
+  uploaded_at: string;
+  uploaded_by: string | null;
+};

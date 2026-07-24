@@ -27,12 +27,20 @@ export default async function HomePage() {
         O dashboard de verdade entra aqui numa próxima etapa.
       </p>
 
-      <Link
-        href="/imoveis"
-        className="mt-6 inline-block text-sm font-medium text-slate-900 underline"
-      >
-        Ver imóveis →
-      </Link>
+      <nav className="mt-6 flex flex-wrap gap-4 text-sm font-medium">
+        <Link href="/imoveis" className="text-slate-900 underline">
+          Imóveis →
+        </Link>
+        <Link href="/contratos" className="text-slate-900 underline">
+          Contratos →
+        </Link>
+        <Link href="/seguros" className="text-slate-900 underline">
+          Seguros →
+        </Link>
+        <Link href="/obrigacoes" className="text-slate-900 underline">
+          Obrigações →
+        </Link>
+      </nav>
     </div>
   );
 }

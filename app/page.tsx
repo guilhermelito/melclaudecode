@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireUser } from "@/lib/supabase/dal";
 import { logout } from "@/app/login/actions";
 
@@ -25,6 +26,13 @@ export default async function HomePage() {
       <p className="mt-2 text-sm text-slate-400">
         O dashboard de verdade entra aqui numa próxima etapa.
       </p>
+
+      <Link
+        href="/imoveis"
+        className="mt-6 inline-block text-sm font-medium text-slate-900 underline"
+      >
+        Ver imóveis →
+      </Link>
     </div>
   );
 }
